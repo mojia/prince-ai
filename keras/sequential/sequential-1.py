@@ -7,24 +7,25 @@ from keras.layers import Dense, Dropout, Activation
 from keras.optimizers import SGD
 import math
 
-x_train = np.random.random((1000, 20))
+x_train = np.random.random((500, 20))
 y_train = keras.utils.to_categorical(
-    np.random.randint(10, size=(1000, 1)), num_classes=10)
+    np.random.randint(10, size=(500, 1)), num_classes=10)
 x_test = np.random.random((100, 20))
 y_test = keras.utils.to_categorical(
     np.random.randint(10, size=(100, 1)), num_classes=10)
+print(y_test)
 
 model = Sequential()
-model.add(Dense(64, activation='relu', input_dim=20))
+model.add(Dense(128, activation='relu', input_dim=20))
 model.add(Dropout(0.1))
-model.add(Dense(64, activation='relu'))
+model.add(Dense(128, activation='relu'))
 model.add(Dense(10, activation='softmax'))
 
 sgd = SGD(lr=0.05, decay=1e-6, momentum=0.9, nesterov=True)
 model.compile(loss='categorical_crossentropy',
               optimizer=sgd, metrics=['accuracy'])
 
-model.fit(x_train, y_train, epochs=1000, batch_size=8)
+model.fit(x_train, y_train, epochs=10, batch_size=8)
 
 print("#####evaluate####")
 lose, accuracy = model.evaluate(x_test, y_test, batch_size=8)
