@@ -1,11 +1,15 @@
 
 class config:
-    trainSampleCount = 100000
-    evaluateCount = 40000
-    backWindowLength = 60
+    backWindowLength = 120
     futureWindow = 240
     enableMACDFeatures = True
-    featureDim = backWindowLength * 2
+    featureDim = backWindowLength * 2 + 1
     debugForPrepareData = False
-    epochs = 800
-    skipStep = 12
+    debugSampleCount = 50
+    epochs = 200
+    skipStep = 5
+    minSizeSamples = 1000
+    kFold = 10
+
+    hidden_layer_1_unit = 500
+    activation = 'tanh'

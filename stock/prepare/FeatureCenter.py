@@ -18,14 +18,6 @@ class FeatureCenter:
         self.debugTrainData = config.debugForPrepareData
         self.backWindow = config.backWindowLength
 
-    def buildY(self, kLines):
-        y = [(k.label if k.label is not None else 1)
-             for k in kLines]
-        y = y[self.backWindow:]
-        y = utils.to_categorical(np.array(y), num_classes=3)
-
-        return y
-
     def buildBARFeature(self, i, kLines):
         featureVec = []
 
@@ -49,7 +41,7 @@ class FeatureCenter:
     def buildDIFFeature(self, i, kLines):
         featureVec = []
 
-        index = i - backWindow
+        index = i - self.backWindow
         while len(featureVec) < self.backWindow:
             featureVec.append(kLines[index].dif)
             index += 1
@@ -67,12 +59,12 @@ class FeatureCenter:
         return featureVec
 
     def buildFeature(self, i, kLines):
-        featureVec = []
+        featureVec = self.buildPriceFeature(i, kLines)
+        featureVec.extend(self.buildBARFeature(i, kLines))
 
-        featureVec.append(self.buildPriceFeature(i, kLines))
-        # featureVec.append(buildDIFFeature(i, kLines))
-        # featureVec.append(buildDEAFeature(i, kLines))
-        featureVec.append(self.buildBARFeature(i, kLines))
+        featureVec.extend([kLines[i].label])
+        if self.debugTrainData is True:
+            print('featureVec\n' + str(featureVec))
 
         feature = np.array(featureVec).reshape((1, self.features_dim))
 
@@ -116,18 +108,20 @@ class FeatureCenter:
         count = len(data)
 
         # price norm
-        priceDim = int(len(data.T) / 2)
+        priceDim = config.backWindowLength
         if config.debugForPrepareData is True:
             print('norm data count:' + str(count))
             print('norm data priceDim:' + str(priceDim))
 
         priceNormVec = self.maxminNorm(data[:, :priceDim])
         # deaNormVec = meanNorm(data[:, priceDim:])
-        barNormVec = self.positiveNegativeNorm(data[:, priceDim:])
+        barNormVec = self.meanNorm(data[:, priceDim: 2 * priceDim])
+        y = data[:, -1]
 
-        array_standard = np.hstack((priceNormVec, barNormVec))
+        standard_x = np.hstack((priceNormVec, barNormVec))
+        standard_y = utils.to_categorical(np.array(y), num_classes=3)
 
-        return array_standard
+        return standard_x, standard_y
 
         # difNormVec = meanNorm(data[:, backWindow: 2 * backWindow])
 
@@ -153,6 +147,7 @@ class FeatureCenter:
 
     def drawX(self, x, label):
         if config.debugForPrepareData is True:
+            print('drawX\n' + str(x))
             drawData = []
             for i in range(4):
                 drawData.append(
@@ -164,12 +159,13 @@ class FeatureCenter:
             self.drawMultiLines(drawData)
 
     def buildInputData(self, kLines):
+        count = int(len(kLines) * 0.8)
         if config.skipStep == 0:
-            input_kLines_train = kLines
-            input_kLines_evaluate = kLines[:config.evaluateCount]
+            input_kLines_train = kLines[:count]
+            input_kLines_evaluate = kLines[count:]
         else:
-            input_train = kLines
-            input_evaluate = kLines[:config.evaluateCount]
+            input_train = kLines[:count]
+            input_evaluate = kLines[count:]
 
             input_kLines_train = []
             input_kLines_evaluate = []
@@ -189,34 +185,67 @@ class FeatureCenter:
 
         return input_kLines_train, input_kLines_evaluate
 
-    def buildX(self, kLines):
-        x = np.zeros((0, self.features_dim), dtype='float')
+    def discard(self, c0, c1, c2, cLabel):
+        minSize = config.minSizeSamples
+        if c0 < minSize or c1 < minSize or c2 < minSize:
+            return False
+
+        c0p = c0 * 100.0 / (c0 + c1 + c2)
+        c1p = c1 * 100.0 / (c0 + c1 + c2)
+        c2p = c2 * 100.0 / (c0 + c1 + c2)
+
+        array = [c0p, c1p, c2p]
+        argmax = np.argmax(np.array(array))
+        argmin = np.argmin(np.array(array))
+
+        if array[argmax] - array[argmin] > 10:
+            return True
+        else:
+            return False
+
+    def buildXY(self, kLines):
+        xy = np.zeros((0, self.features_dim), dtype='float')
         print('--------buildX----------')
         print('kLines size ' + str(len(kLines)))
-        print('in x.shape ' + str(x.shape))
+        print('in xy.shape ' + str(xy.shape))
 
+        countLabel0 = 0
+        countLabel1 = 0
+        countLabel2 = 0
         for i in range(len(kLines)):
             if i >= config.backWindowLength:
                 feature = self.buildFeature(i, kLines)
-                x = np.vstack((feature, x))
+                if kLines[i].label == 0:
+                    countLabel0 += 1
+                elif kLines[i].label == 1:
+                    countLabel1 += 1
+                elif kLines[i].label == 2:
+                    countLabel2 += 1
+                if self.discard(countLabel0, countLabel1,
+                                countLabel2, kLines[i].label):
+                    pass
+                else:
+                    xy = np.vstack((feature, xy))
 
-                if i % 100 == 0:
-                    print('buildX complete ' + (str(i)) +
-                          str(' ') + str(i * 100.0 / len(kLines)))
+                if i % 1000 == 0:
+                    print('buildX complete ' + (str(i)) + " " +
+                          str(i * 100.0 / len(kLines)) + " " +
+                          str(countLabel0) + " " +
+                          str(countLabel1) + " " +
+                          str(countLabel2) + " ")
 
                 if self.debug() is True:
-                    if i == config.backWindowLength + 4:
+                    if i == config.backWindowLength + config.debugSampleCount:
                         break
 
             i += 1
 
-        self.drawX(x, 'xdata')
-        featuresNorm = self.norm(x)
-        self.drawX(featuresNorm, 'xdataNorm')
+        print('xy.shape ' + str(xy.shape))
+        self.drawX(xy[:self.features_dim - 1], 'xdata')
+        standard_x, standard_y = self.norm(xy)
+        self.drawX(standard_x, 'xdataNorm')
 
-        print('featuresNorm\n' + str(featuresNorm))
-
-        return featuresNorm
+        return standard_x, standard_y
 
     def buildTrainAndEvaluateData(self):
         kLines = self.dbHelper.query(
@@ -226,11 +255,8 @@ class FeatureCenter:
         input_kLines_train, input_kLines_evaluate = \
             self.buildInputData(kLines)
 
-        train_x = self.buildX(input_kLines_train)
-        train_y = self.buildY(input_kLines_train)
-
-        evaluate_x = self.buildX(input_kLines_evaluate)
-        evaluate_y = self.buildY(input_kLines_evaluate)
+        train_x, train_y = self.buildXY(input_kLines_train)
+        evaluate_x, evaluate_y = self.buildXY(input_kLines_evaluate)
 
         return np.array(train_x), train_y, \
             np.array(evaluate_x), evaluate_y

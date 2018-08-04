@@ -55,8 +55,8 @@ class OriginalDataSaver:
                 self.dbHelper.saveKLine(k)
 
                 i += 1
-                if i % 500 == 0:
-                    print('OriginalDataSaver.processFile progress line num '
-                          + str(i))
+                if i % 1000 == 0:
+                    print('OriginalDataSaver.processFile ' + self.code +
+                          ' progress line num ' + str(i))
 
         print('OriginalDataSaver end')

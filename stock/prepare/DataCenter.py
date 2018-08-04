@@ -4,20 +4,19 @@ from MacdProcessor import MacdProcessor
 
 startDateTime = "2001-10-01 09:35:00"
 endDateTime = "2020-10-20 09:35:00"
-fileName = 'SH600003.CSV'
+csvFileName = 'SH600015.CSV'
 
 
-def process(csvFileName):
-    originalDataSaver = OriginalDataSaver(csvFileName)
-    originalDataSaver.processFile()
+code = csvFileName.replace('.CSV', '')
 
-    code = csvFileName.replace('.CSV', '')
+originalDataSaver = OriginalDataSaver(csvFileName)
+print(code + ' start to originalDataSaver.processFile...')
+originalDataSaver.processFile()
 
-    labelProcessor = LabelProcessor(code, startDateTime, endDateTime)
-    labelProcessor.refreshLabels()
+print(code + ' start to labelProcessor.refreshLabels...')
+labelProcessor = LabelProcessor(code, startDateTime, endDateTime)
+labelProcessor.refreshLabels()
 
-    macdProcessor = MacdProcessor(code, startDateTime, endDateTime)
-    macdProcessor.refreshMACD()
-
-
-process(fileName)
+print(code + ' start to macdProcessor.refreshMACD...')
+macdProcessor = MacdProcessor(code, startDateTime, endDateTime)
+macdProcessor.refreshMACD()

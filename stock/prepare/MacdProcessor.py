@@ -69,11 +69,12 @@ class MacdProcessor:
             previous_ema_26 = current_ema_26
             previous_dea = current_dea
 
-            if i % 500 == 0:
-                print('refreshMACD progress ' + str(i * 100.0 / len(kLines)))
+            if i % 1000 == 0:
+                print(self.code + ' refreshMACD progress ' +
+                      str(i * 100.0 / len(kLines)))
             i += 1
 
 
 # refreshMACD('600846', "2001-10-01 09:35:00", "2020-10-20 09:35:00")
-MacdProcessor('SH600004', "2001-10-01 09:35:00",
-              "2018-10-09 09:40:00").refreshMACD()
+# MacdProcessor('SH600004', "2001-10-01 09:35:00",
+# "2018-10-09 09:40:00").refreshMACD()

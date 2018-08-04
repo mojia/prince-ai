@@ -94,7 +94,6 @@ class DBHelper:
 
         cursor.execute(sql, param)
         data = cursor.fetchall()
-        print('query ' + str(len(data)) + ' from db')
 
         cursor.close()
 
@@ -134,7 +133,6 @@ class DBHelper:
         data = cursor.fetchone()
         cursor.close()
 
-        print("Database version : %s " % data)
         return data
 
     def exist(self, k):
@@ -166,7 +164,6 @@ class DBHelper:
         try:
             cursor.execute(sql, kline)
             self.db.commit()
-            print('save k success')
         except Exception as e:
             self.db.rollback()
             print('save k exception, rollback. ' + str(e))

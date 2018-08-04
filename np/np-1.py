@@ -47,3 +47,26 @@ while (index < len(input_train)):
     index += step
 
 print(input_kLines_train)
+
+
+print('-------------------------------')
+a = [0, 1, 0]
+b = [1, 0, 0]
+c = [0, 0, 1]
+print(np.argmax(a))
+print(np.argmax(b))
+print(np.argmax(c))
+
+print('-------------flatten------------------')
+a = [[1, 2, 3, 7], [9, 4, 1, 3], [0]]
+print(np.array(np.array(a).flatten()))
+
+
+print('-------------flatten------------------')
+a = [[1, 2, 3, 7, 9, 4, 1, 3, 0], [11, 12, 13, 17, 19, 14, 11, 13, 2]]
+a = np.array(a)
+
+print('-------------slice------------------')
+a = np.random.random((1, 100))
+print(len(a[0][:80]))
+print(len(a[0][80:]))
