@@ -1,5 +1,7 @@
 import os
 import matplotlib.pyplot as plt
+import math
+import numpy as np
 
 dir = '/Users/xinwang/Downloads'
 dotFile = 'account-level-time-dot.csv'
@@ -11,48 +13,39 @@ def getCost(fileName):
     with open(os.path.join(dir, fileName), 'r') as f:
         for line in f:
             line = line.replace('"', '')
-            cost = float(line) / 1000.0
+            cost = float(line)
 
-            if cost < 10:
-                c.append(cost)
+            c.append(cost)
 
     return c
 
 
-dotC = getCost(dotFile)
-zillC = getCost(zillFile)
-dotC.sort()
-zillC.sort()
+def getData(data):
+    count = 20
+    result = [0] * count
+    for i in range(count):
+        basket = i * 10
+        basketNext = (i + 1) * 10
+        for k in range(len(data)):
+            if data[k] >= basket and data[k] < basketNext:
+                result[i] += 1
+        i += 1
 
-
-def getBins():
-    step = 0.25 / 1000.0
-
-    bins = []
-    for i in range(1000):
-        value = step * i
-        bins.append(value)
-
-    return bins
+    return result
 
 
 def drawHist():
+    dotC = getCost(dotFile)
+    zillC = getCost(zillFile)
+
     fig = plt.figure()
-    plt.hist(dotC, bins=getBins(), alpha=0.4,
-             label='Dot', color='red', normed=1)
-    plt.hist(zillC, bins=getBins(), alpha=0.4,
-             label='Zill', color='black', normed=1)
+    dotCData = getData(dotC)
+    zillCData = getData(zillC)
+
+    plt.bar(range(len(dotCData)), dotCData, alpha=0.4, label='Dot', color='red')
+    plt.bar(range(len(zillCData)), zillCData, alpha=0.4, label='Zill', color='black')
+    # plt.hist(range(len(zillC)), bins=20, alpha=0.4, label='Zill', color='black')
     plt.show()
 
 
-def drawLines():
-    fig = plt.figure()
-    plt.scatter(range(len(dotC)), dotC, color='red',
-                s=[1] * len(dotC), label='Dot')
-    plt.scatter(range(len(zillC)), zillC, color='black',
-                s=[1] * len(zillC), label='Dot')
-
-    plt.show()
-
-
-drawLines()
+drawHist()

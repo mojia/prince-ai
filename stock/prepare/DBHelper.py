@@ -1,6 +1,7 @@
 import pymysql
 from KLine import KLine
-from config import config
+from Config import Config
+config = Config()
 
 defaultKtype = '5f'
 futureWindow = config.futureWindow
@@ -59,7 +60,7 @@ class DBHelper:
     def queryFutureKLines(self, code, start, type=defaultKtype):
         cursor = self.db.cursor()
 
-        sql = "select " + fields + "from k_table \
+        sql = "select " + fields + " from k_table \
                where code=%(code)s and create_time>= %(start)s \
                and type=%(type)s order by create_time \
                limit %(window)s"

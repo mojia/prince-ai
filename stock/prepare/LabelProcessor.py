@@ -9,9 +9,10 @@ from matplotlib.pylab import date2num
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 import multiprocessing
-from config import config
+from Config import Config
 
 
+config = Config()
 increase_decrease = "/\\"
 decrease_increase = "\/"
 rise = "///"

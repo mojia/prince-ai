@@ -1,4 +1,4 @@
-from config import config
+from Config import Config
 import os
 from DBHelper import DBHelper
 import numpy as np
@@ -7,6 +7,8 @@ import matplotlib.pyplot as plt
 from CSVFileUtil import CSVFileUtil
 from keras import utils
 
+config = Config()
+
 
 class FeatureCenter:
     def __init__(self, code, startDateTime, endDateTime):
@@ -14,7 +16,7 @@ class FeatureCenter:
         self.startDateTime = startDateTime
         self.endDateTime = endDateTime
         self.dbHelper = DBHelper()
-        self.features_dim = config.featureDim
+        self.dataDim = config.getDataDim()
         self.debugTrainData = config.debugForPrepareData
         self.backWindow = config.backWindowLength
 
@@ -58,17 +60,19 @@ class FeatureCenter:
 
         return featureVec
 
-    def buildFeature(self, i, kLines):
-        featureVec = self.buildPriceFeature(i, kLines)
-        featureVec.extend(self.buildBARFeature(i, kLines))
+    def buildSample(self, i, kLines):
+        sample = self.buildPriceFeature(i, kLines)
 
-        featureVec.extend([kLines[i].label])
+        if config.addBarFeatures is True:
+            sample.extend(self.buildBARFeature(i, kLines))
+
         if self.debugTrainData is True:
-            print('featureVec\n' + str(featureVec))
+            print('sample\n' + str(sample))
 
-        feature = np.array(featureVec).reshape((1, self.features_dim))
+        sample.extend([kLines[i].label])
+        sampleArray = np.array(sample).reshape((1, self.dataDim))
 
-        return feature
+        return sampleArray
 
     def debug(self):
         return config.debugForPrepareData
@@ -113,17 +117,18 @@ class FeatureCenter:
             print('norm data count:' + str(count))
             print('norm data priceDim:' + str(priceDim))
 
-        priceNormVec = self.maxminNorm(data[:, :priceDim])
-        # deaNormVec = meanNorm(data[:, priceDim:])
-        barNormVec = self.meanNorm(data[:, priceDim: 2 * priceDim])
-        y = data[:, -1]
+        priceNormVec = self.meanNorm(data[:, :priceDim])
 
-        standard_x = np.hstack((priceNormVec, barNormVec))
+        if config.addBarFeatures is True:
+            barNormVec = self.meanNorm(data[:, priceDim: 2 * priceDim])
+            standard_x = np.hstack((priceNormVec, barNormVec))
+        else:
+            standard_x = np.array(priceNormVec)
+
+        y = data[:, -1]
         standard_y = utils.to_categorical(np.array(y), num_classes=3)
 
         return standard_x, standard_y
-
-        # difNormVec = meanNorm(data[:, backWindow: 2 * backWindow])
 
     def drawMultiLines(self, figureDatas):
         fig = plt.figure(figsize=(30, 8))
@@ -145,17 +150,19 @@ class FeatureCenter:
                 if index >= len(figureDatas):
                     return
 
-    def drawX(self, x, label):
+    def drawX(self, x, y):
         if config.debugForPrepareData is True:
+            x = np.array(x)
             print('drawX\n' + str(x))
             drawData = []
-            for i in range(4):
+            for i in range(len(x)):
+                label = np.argmax(y[i])
                 drawData.append(
                     FigurePoints(x[i][:config.backWindowLength],
-                                 label + str(' ') + str(i) + " price"))
-                drawData.append(FigurePoints(
-                    x[i][config.backWindowLength:2 * config.backWindowLength],
-                    "DEA"))
+                                 str(i) + str(' ') + str(label)))
+                # drawData.append(FigurePoints(
+                #     x[i][config.backWindowLength:2 * config.backWindowLength],
+                #     "DEA"))
             self.drawMultiLines(drawData)
 
     def buildInputData(self, kLines):
@@ -204,7 +211,7 @@ class FeatureCenter:
             return False
 
     def buildXY(self, kLines):
-        xy = np.zeros((0, self.features_dim), dtype='float')
+        xy = np.zeros((0, self.dataDim), dtype='float')
         print('--------buildX----------')
         print('kLines size ' + str(len(kLines)))
         print('in xy.shape ' + str(xy.shape))
@@ -214,7 +221,7 @@ class FeatureCenter:
         countLabel2 = 0
         for i in range(len(kLines)):
             if i >= config.backWindowLength:
-                feature = self.buildFeature(i, kLines)
+                sample = self.buildSample(i, kLines)
                 if kLines[i].label == 0:
                     countLabel0 += 1
                 elif kLines[i].label == 1:
@@ -225,7 +232,7 @@ class FeatureCenter:
                                 countLabel2, kLines[i].label):
                     pass
                 else:
-                    xy = np.vstack((feature, xy))
+                    xy = np.vstack((sample, xy))
 
                 if i % 1000 == 0:
                     print('buildX complete ' + (str(i)) + " " +
@@ -241,9 +248,9 @@ class FeatureCenter:
             i += 1
 
         print('xy.shape ' + str(xy.shape))
-        self.drawX(xy[:self.features_dim - 1], 'xdata')
+        # self.drawX(xy[:self.dataDim - 1], 'xdata')
         standard_x, standard_y = self.norm(xy)
-        self.drawX(standard_x, 'xdataNorm')
+        self.drawX(standard_x, standard_y)
 
         return standard_x, standard_y
 
